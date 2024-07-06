@@ -1,0 +1,47 @@
+module FinancialContracts where
+
+-- Define a generic contract type
+template FinancialContract
+  with
+    issuer : Party
+    counterparty : Party
+    contractType : Text  -- Identifier for the type of contract (e.g., "MunicipalBond", "VentureCapitalFund", etc.)
+    contractData : ContractData  -- Structured data type for specific contract details
+  where
+    signatory issuer
+    observer counterparty
+    -- Add additional observers as needed
+
+    controller issuer can
+      IssueContract : ContractId FinancialContract
+        with
+          counterparty : Party
+          contractType : Text
+          contractData : ContractData
+        do
+          create this with
+            counterparty = counterparty
+            contractType = contractType
+            contractData = contractData
+
+    controller counterparty can
+      TransferContract : ContractId FinancialContract
+        with
+          newCounterparty : Party
+        do
+          create this with counterparty = newCounterparty
+      -- Add other actions that counterparty can perform
+
+-- Define a structured data type for contract details
+data ContractData = 
+  MunicipalBondData {
+    maturityDate : Date,
+    principalAmount : Decimal,
+    couponRate : Decimal
+  }
+  | VentureCapitalFundData {
+    fundManager : Party,
+    portfolioCompanies : [Party]
+  }
+  -- Add more variants as needed for other contract types
+  deriving (Eq, Show)

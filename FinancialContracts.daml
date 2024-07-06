@@ -1,19 +1,23 @@
 module FinancialContracts where
 
--- Define a generic contract type
-template FinancialContract
+-- Import necessary modules
+import DA.Date
+import DA.List
+
+-- Define a core template for financial contracts
+template Contract
   with
     issuer : Party
     counterparty : Party
-    contractType : Text  -- Identifier for the type of contract (e.g., "MunicipalBond", "VentureCapitalFund", etc.)
-    contractData : ContractData  -- Structured data type for specific contract details
+    contractType : Text  -- Identifier for the type of contract
+    contractData : ContractData  -- Structured data type for contract details
   where
     signatory issuer
     observer counterparty
     -- Add additional observers as needed
 
     controller issuer can
-      IssueContract : ContractId FinancialContract
+      IssueContract : ContractId Contract
         with
           counterparty : Party
           contractType : Text
@@ -25,10 +29,11 @@ template FinancialContract
             contractData = contractData
 
     controller counterparty can
-      TransferContract : ContractId FinancialContract
+      TransferContract : ContractId Contract
         with
           newCounterparty : Party
         do
+          assertMsg (issuer /= newCounterparty) "Cannot transfer to the issuer"
           create this with counterparty = newCounterparty
       -- Add other actions that counterparty can perform
 
@@ -45,3 +50,24 @@ data ContractData =
   }
   -- Add more variants as needed for other contract types
   deriving (Eq, Show)
+
+-- Utility function to calculate maturity date for contracts
+calculateMaturityDate : ContractData -> Date
+calculateMaturityDate contractData =
+  case contractData of
+    MunicipalBondData { maturityDate = maturity } -> maturity
+    _ -> error "Contract type not supported for maturity calculation"
+
+-- Utility function to list all contracts by type
+template ListContracts
+  with
+    contracts : [ContractId Contract]
+  where
+    signatory contracts
+
+-- Example scenarios (can be used for testing)
+template ExampleScenario
+  with
+    scenarioName : Text
+  where
+    signatory scenarioName
